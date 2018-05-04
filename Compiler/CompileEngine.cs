@@ -70,6 +70,11 @@ namespace Jack_Compiler
             tw.Close();
         }
 
+        public void Constructor()
+        {
+
+        }
+
         public void CompileClass()
         {
             if (writeTokens)
@@ -77,7 +82,7 @@ namespace Jack_Compiler
                 OpenXMLTag("tokens");
                 while (tokenEngine.HasMoreTokens())
                 {
-                    writeXMLTag();
+                    WriteXMLTag();
                 }
                 CloseXMLTag();
             }
@@ -89,7 +94,7 @@ namespace Jack_Compiler
 
                     if (tokenEngine.GetKeyword() == "identifier")
                     {
-                        writeXMLTag();
+                        CompileClassName();
 
                         if (tokenEngine.GetSymbol() == "{")
                         {
@@ -97,24 +102,24 @@ namespace Jack_Compiler
                             {
                                 if ((tokenEngine.GetKeyword() == "static") || (tokenEngine.GetKeyword() == "field"))
                                 {
-                                    writeXMLTag();
+                                    WriteXMLTag();
                                     CompileClassVarDec();
                                     continue;
                                 }
                                 else if ((tokenEngine.GetKeyword() == "constructor") || (tokenEngine.GetKeyword() == "function") || (tokenEngine.GetKeyword() == "method"))
                                 {
-                                    writeXMLTag();
+                                    WriteXMLTag();
                                     CompileSubroutine();
                                     continue;
                                 }
                                 else if (tokenEngine.GetSymbol() == "}")
                                 {
-                                    writeXMLTag();
+                                    WriteXMLTag();
                                     break;
                                 }
                                 else if (tokenEngine.GetKeyword() == "var")
                                 {
-                                    writeXMLTag();
+                                    WriteXMLTag();
                                     CompileClassVarDec();
                                 }
                             }
@@ -127,12 +132,29 @@ namespace Jack_Compiler
 
         public void CompileClassVarDec()
         {
+            CompileType();
+            CompileClassName();
 
+            if (tokenEngine.GetSymbol() == ",")
+            {
+                while (tokenEngine.GetSymbol() != ";")
+                {
+                    if (tokenEngine.GetTokenType().ToString() == "identifier")
+                        CompileVarName();
+                }
+            }
+
+            if(tokenEngine.GetSymbol() == ";")
+                WriteXMLTag();
         }
 
         public void CompileSubroutine()
         {
+            OpenXMLTag("Subroutine");
 
+
+
+            CloseXMLTag();
         }
 
         public void CompileParameterlist()
@@ -190,9 +212,36 @@ namespace Jack_Compiler
 
         }
 
-        public void Check()
+        public void CompileIdentifier()
         {
+            if (tokenEngine.GetTokenType().ToString() == "identifier")
+            {
+                WriteXMLTag();
+            }
+        }
 
+        public void CompileType()
+        {
+            if (tokenEngine.GetKeyword() == "int" || tokenEngine.GetKeyword() == "char"
+                || tokenEngine.GetKeyword() == "boolean" || tokenEngine.GetTokenType().ToString() == "identifier")
+            {
+                WriteXMLTag();
+            }
+        }
+
+        public void CompileClassName()
+        {
+            CompileIdentifier();
+        }
+
+        public void SubroutineName()
+        {
+            CompileIdentifier();
+        }
+
+        public void CompileVarName()
+        {
+            CompileIdentifier();
         }
 
         public void Indent()
@@ -203,7 +252,7 @@ namespace Jack_Compiler
             }
         }
 
-        public void writeXMLTag()
+        public void WriteXMLTag()
         {
             if (writeXML == true)
             {
