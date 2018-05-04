@@ -16,38 +16,10 @@ namespace Jack_Compiler
         private static List<string> assembledLines = new List<string>();
         private static string fileName = "";
         private static string functionName = "";
-
-        private static List<string> operators = new List<string>()
-        {
-            "+",
-            "-",
-            "*",
-            "/",
-            "&",
-            "|",
-            "<",
-            ">",
-            "=",
-            "~"
-        };
-
-        private static List<string> symbols = new List<string>()
-        {
-            "{",
-            "}",
-            "[",
-            "]",
-            "(",
-            ")",
-            ".",
-            ",",
-            ";",
-            "\""
-        };
-
+        private static int indentLevel = 0;
+        
         public static void CompileFolder(string foldername, string filename)
         {
-            string line;
             List<string> fileList = new List<string>();
 
             string[] fileEntries = Directory.GetFiles(foldername);//Load all of the files in the target dir
@@ -63,20 +35,7 @@ namespace Jack_Compiler
             {
                 fileName = Path.GetFileName(fileList[count]);
                 fileName = fileName.Split('.')[0];
-                fileLines.Clear();
-                StreamReader file = new StreamReader(fileList[count]);
-                while ((line = file.ReadLine()) != null)
-                {
-                    fileLines.Add(line);
-                }
-                file.Close();
-                ClearWhitespace();
-                GenerateTokenList();
-
-                for (int i = 0; i < fileLines.Count; i++)
-                {
-
-                }
+                tokenEngine = new TokenEngine(fileLines[count]);
             }
 
             WriteToFile(foldername, filename);
@@ -137,108 +96,6 @@ namespace Jack_Compiler
                     }
                 }
             }*/
-        }
-
-        private static void ClearWhitespace()
-        {
-            //Clear Comments
-            for (int i = 0; i < fileLines.Count; i++)
-            {
-                int index = fileLines[i].IndexOf("//");
-                if (index > -1)
-                {
-                    fileLines[i] = fileLines[i].Substring(0, index);
-                }
-            }
-            RemoveBlockComments();
-            //This clears extra lines.
-            int counter = 0;
-            while (true)
-            {
-                if (fileLines[counter] == "" || fileLines[counter] == "\t" || fileLines[counter] == "\r")
-                {
-                    fileLines.RemoveAt(counter);
-                }
-                else
-                {
-                    counter++;
-                    if (counter >= fileLines.Count)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-
-        private static void GenerateTokenList()
-        {
-            for (int i = 0; i < fileLines.Count; i++)
-            {
-                foreach(string op in operators)
-                {
-                    fileLines[i] = fileLines[i].Replace(op, " " + op + " ");//Add spaces to help with separation
-                }
-                foreach (string op in symbols)
-                {
-                    fileLines[i] = fileLines[i].Replace(op, " " + op + " ");//Add spaces to help with separation
-                }
-                List<string> lineTokens = fileLines[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-                tokenList.AddRange(lineTokens);
-            }
-        }
-
-        private static void RemoveBlockComments()
-        {
-            while (true)
-            {
-                bool foundBlock = false;
-                int startline = -1, endline = -1;
-                for (int i = 0; i < fileLines.Count; i++)
-                {
-                    if(!foundBlock)
-                    {
-                        if (fileLines[i].Contains("/*"))
-                        {
-                            if (fileLines[i].Contains("*/"))
-                            {
-                                startline = i;
-                                endline = i;
-                                foundBlock = true;
-                                break;
-                            }
-                            else
-                            {
-                                startline = i;
-                                foundBlock = true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(fileLines[i].Contains("*/"))
-                        {
-                            endline = i;
-                            break;
-                        }
-                    }
-                }
-                if(foundBlock)
-                {
-                    if(endline != -1)
-                    {
-                        fileLines.RemoveRange(startline, (1 + (endline - startline)));
-                    }
-                    else
-                    {
-                        Console.WriteLine("Error! Block comment was NOT closed!");
-                        return;
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
         }
 
         private static void WriteToFile(string foldername, string filename)

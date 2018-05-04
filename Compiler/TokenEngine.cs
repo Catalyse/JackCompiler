@@ -8,59 +8,259 @@ using System.Globalization;
 
 namespace Jack_Compiler
 {
+    public enum TokenType { KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST, UNKNOWN };
+
     public class TokenEngine
     {
         //bool hasMoreTokens = false;
-        public enum TokenType { KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST, UNKNOWN };
-        public string currentToken;
+        public int currentTokenIndex;
         public static TokenType tokenType;
-        int charLine;
+        private static List<string> fileLines = new List<string>();
+        private static List<string> tokenList = new List<string>();
 
-        public static Dictionary<string, int> keyWord = new Dictionary<string, int>()
-          {
-               {"class", 0},
-               {"method", 0},
-               {"function", 0},
-               {"constructor", 0},
-               {"int", 0 },
-               {"boolean", 0 },
-               {"char", 0 },
-               {"void", 0 },
-               {"static", 0 },
-               {"field", 0 },
-               {"let",0 },
-               {"do", 0 },
-               {"if", 0 },
-               {"else", 0 },
-               {"while", 0 },
-               {"return", 0 },
-               {"true", 0 },
-               {"false", 0 },
-               {"null", 0 },
-               {"this", 0 }
-          };
-
-
-        public TokenEngine(string file)
+        public static List<string> keywords = new List<string>()
         {
+            "class",
+            "method",
+            "function",
+            "constructor",
+            "int",
+            "boolean",
+            "char",
+            "void",
+            "static",
+            "field",
+            "let",
+            "do",
+            "if",
+            "else",
+            "while",
+            "return",
+            "true",
+            "false",
+            "null",
+            "this"
+        };
 
-            currentToken = " ";
-            tokenType = TokenType.UNKNOWN;
-            charLine = 0;
+        private static List<string> operators = new List<string>()
+        {
+            "+",
+            "-",
+            "*",
+            "/",
+            "&",
+            "|",
+            "<",
+            ">",
+            "=",
+            "~"
+        };
+
+        private static List<string> symbols = new List<string>()
+        {
+            "{",
+            "}",
+            "[",
+            "]",
+            "(",
+            ")",
+            ".",
+            ",",
+            ";"
+        };
+
+        public TokenEngine(string fileName)
+        {
+            fileLines.Clear();
+            StreamReader file = new StreamReader(fileName);
+            string line;
+            while ((line = file.ReadLine()) != null)
+            {
+                fileLines.Add(line);
+            }
+            file.Close();
+            ClearWhitespace();
+            GenerateTokenList();
+            currentTokenIndex = 0;
         }
 
-        public void advance()
+        public bool HasMoreTokens()
         {
-            //unicode category.something
+            if(currentTokenIndex + 1 != tokenList.Count)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
+        public void Advance()
+        {
+            currentTokenIndex++;
+        }
+
+        public void Retreat()
+        {
+            currentTokenIndex--;
+        }
+
+        public TokenType GetTokenType()
+        {
+            int testValue = 0;
+            string keywordtest = tokenList[currentTokenIndex].ToLower();
+            if(keywords.Contains(keywordtest))
+            {
+                return TokenType.KEYWORD;
+            }
+            else if(symbols.Contains(tokenList[currentTokenIndex]) || operators.Contains(tokenList[currentTokenIndex]))
+            {
+                return TokenType.SYMBOL;
+            }
+            else if(int.TryParse(tokenList[currentTokenIndex], out testValue))
+            {
+                return TokenType.INT_CONST;
+            }
+            else if(tokenList[currentTokenIndex][0] == '\"')
+            {
+                return TokenType.STRING_CONST;
+            }
+            else
+            {
+                return TokenType.UNKNOWN;
+            }
+        }
+
+        public string GetKeyword()
+        {
+            if (keywords.Contains(tokenList[currentTokenIndex].ToLower()))
+            {
+                return tokenList[currentTokenIndex].ToUpper();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public string GetSymbol()
+        {
+            if (symbols.Contains(tokenList[currentTokenIndex]) || operators.Contains(tokenList[currentTokenIndex]))
+            {
+                return tokenList[currentTokenIndex];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public string GetIdentifier()
+        {
 
         }
 
-
-
-        public void symbol()
+        private static void ClearWhitespace()
         {
+            //Clear Comments
+            for (int i = 0; i < fileLines.Count; i++)
+            {
+                int index = fileLines[i].IndexOf("//");
+                if (index > -1)
+                {
+                    fileLines[i] = fileLines[i].Substring(0, index);
+                }
+            }
+            RemoveBlockComments();
+            //This clears extra lines.
+            int counter = 0;
+            while (true)
+            {
+                if (fileLines[counter] == "" || fileLines[counter] == "\t" || fileLines[counter] == "\r")
+                {
+                    fileLines.RemoveAt(counter);
+                }
+                else
+                {
+                    counter++;
+                    if (counter >= fileLines.Count)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
 
+        private static void GenerateTokenList()
+        {
+            for (int i = 0; i < fileLines.Count; i++)
+            {
+                foreach (string op in operators)
+                {
+                    fileLines[i] = fileLines[i].Replace(op, " " + op + " ");//Add spaces to help with separation
+                }
+                foreach (string op in symbols)
+                {
+                    fileLines[i] = fileLines[i].Replace(op, " " + op + " ");//Add spaces to help with separation
+                }
+                List<string> lineTokens = fileLines[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                tokenList.AddRange(lineTokens);
+            }
+        }
+
+        private static void RemoveBlockComments()
+        {
+            while (true)
+            {
+                bool foundBlock = false;
+                int startline = -1, endline = -1;
+                for (int i = 0; i < fileLines.Count; i++)
+                {
+                    if (!foundBlock)
+                    {
+                        if (fileLines[i].Contains("/*"))
+                        {
+                            if (fileLines[i].Contains("*/"))
+                            {
+                                startline = i;
+                                endline = i;
+                                foundBlock = true;
+                                break;
+                            }
+                            else
+                            {
+                                startline = i;
+                                foundBlock = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (fileLines[i].Contains("*/"))
+                        {
+                            endline = i;
+                            break;
+                        }
+                    }
+                }
+                if (foundBlock)
+                {
+                    if (endline != -1)
+                    {
+                        fileLines.RemoveRange(startline, (1 + (endline - startline)));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error! Block comment was NOT closed!");
+                        return;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
     }
 }
