@@ -14,7 +14,6 @@ namespace Jack_Compiler
         private static List<string> fileLines = new List<string>();
         private static List<string> tokenList = new List<string>();
         private static List<string> assembledLines = new List<string>();
-        private static int currentTempLabel = 0;
         private static string fileName = "";
         private static string functionName = "";
 
@@ -42,7 +41,8 @@ namespace Jack_Compiler
             ")",
             ".",
             ",",
-            ";"
+            ";",
+            "\""
         };
 
         public static void CompileFolder(string foldername, string filename)
@@ -71,6 +71,7 @@ namespace Jack_Compiler
                 }
                 file.Close();
                 ClearWhitespace();
+                GenerateTokenList();
 
                 for (int i = 0; i < fileLines.Count; i++)
                 {
@@ -84,7 +85,7 @@ namespace Jack_Compiler
         }
 
         public CompileEngine(string file, StreamWriter VMOutFile, StreamWriter XMLOutFile, bool includeSource, bool tokensOnly)
-        {
+        {/*
             tokenEngine = new TokenEngine(file);
             if (XMLOutFile != null)
             {
@@ -92,11 +93,11 @@ namespace Jack_Compiler
                 doXML = true;
                 OnlyDoTokens = tokensOnly;
                 XMLFile = XMLOutFile;
-            }
+            }*/
         }
 
         public void CompileClass()
-        {
+        {/*
             if (OnlyDoTokens)
             {
                 WriteXMLTag("tokens");
@@ -135,7 +136,7 @@ namespace Jack_Compiler
                         CompileClassVarDec();
                     }
                 }
-            }
+            }*/
         }
 
         private static void ClearWhitespace()
@@ -175,9 +176,14 @@ namespace Jack_Compiler
             {
                 foreach(string op in operators)
                 {
-
+                    fileLines[i] = fileLines[i].Replace(op, " " + op + " ");//Add spaces to help with separation
+                }
+                foreach (string op in symbols)
+                {
+                    fileLines[i] = fileLines[i].Replace(op, " " + op + " ");//Add spaces to help with separation
                 }
                 List<string> lineTokens = fileLines[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                tokenList.AddRange(lineTokens);
             }
         }
 
@@ -193,8 +199,18 @@ namespace Jack_Compiler
                     {
                         if (fileLines[i].Contains("/*"))
                         {
-                            startline = i;
-                            foundBlock = true;
+                            if (fileLines[i].Contains("*/"))
+                            {
+                                startline = i;
+                                endline = i;
+                                foundBlock = true;
+                                break;
+                            }
+                            else
+                            {
+                                startline = i;
+                                foundBlock = true;
+                            }
                         }
                     }
                     else
@@ -210,7 +226,7 @@ namespace Jack_Compiler
                 {
                     if(endline != -1)
                     {
-                        fileLines.RemoveRange(startline, (endline - startline));
+                        fileLines.RemoveRange(startline, (1 + (endline - startline)));
                     }
                     else
                     {

@@ -16,8 +16,6 @@ namespace Jack_Compiler
         public static TokenType tokenType;
         int charLine;
 
-
-
         public static Dictionary<string, int> keyWord = new Dictionary<string, int>()
           {
                {"class", 0},
