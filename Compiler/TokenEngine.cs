@@ -96,11 +96,13 @@ namespace Jack_Compiler
         public void Advance()
         {
             currentTokenIndex++;
+            currentTokenType = GetTokenType();
         }
 
         public void Retreat()
         {
             currentTokenIndex--;
+            currentTokenType = GetTokenType();
         }
 
         public TokenType GetTokenType()
