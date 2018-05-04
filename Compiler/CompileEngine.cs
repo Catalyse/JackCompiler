@@ -17,6 +17,8 @@ namespace Jack_Compiler
         private static string fileName = "";
         private static string functionName = "";
 
+        public static StreamWriter XMLOutFile;
+
         private static List<string> operators = new List<string>()
         {
             "+",
@@ -100,16 +102,16 @@ namespace Jack_Compiler
         {/*
             if (OnlyDoTokens)
             {
-                WriteXMLTag("tokens");
+                writeXMLTagOpen("tokens");
                 while (Tokenizer.advance())
                 {
                     WriteXML(convert(Tokenizer.tokenType), Tokenizer.currentToken);
                 }
-                writeXMLTag("/tokens");
+                writeXMLTagClose("tokens");
             }
             else
             {
-                writeXMLTag("class");
+                writeXMLTagOpen("class");
                 expect("keyword", "class");
                 expect("identifier");
                 expect("symbol", "{");
@@ -128,7 +130,7 @@ namespace Jack_Compiler
                     }
                     else if (tokenEngine.currentToken == "}")
                     {
-                        WriteXML("symbol", "}");
+                        writeXMLTag("symbol", "}");
                         break;
                     }
                     else if (tokenEngine.currentToken == "var")
@@ -136,8 +138,8 @@ namespace Jack_Compiler
                         CompileClassVarDec();
                     }
                 }
-            }*/
-        }
+            }
+        */}
 
         private static void ClearWhitespace()
         {
@@ -271,6 +273,30 @@ namespace Jack_Compiler
         public void CompileVarDec()
         {
 
+        }
+
+        static void writeXMLTag(string tag, string value)
+        {
+            if (writeXML == true)
+            {
+                XMLOutFile.Write('<' + tag + '>' + value + "</" + tag + '>');
+            }
+        }
+
+        static void writeXMLTagOpen(string tag)
+        {
+            if (writeXML == true)
+            {
+                XMLOutFile.Write('<' + tag + '>');
+            }
+        }
+
+        static void writeXMLTagClose(string tag)
+        {
+            if (writeXML == true)
+            {
+                XMLOutFile.Write("/<" + tag + '>');
+            }
         }
     }
 }
