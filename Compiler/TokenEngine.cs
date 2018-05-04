@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace Jack_Compiler
 {
-    class TokenEngine
+    public class TokenEngine
     {
         //bool hasMoreTokens = false;
         public enum TokenType { KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST, UNKNOWN };
@@ -43,7 +43,7 @@ namespace Jack_Compiler
           };
 
 
-        public Tokenizer(string file)
+        public TokenEngine(string file)
         {
 
             currentToken = " ";
