@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Jack_Compiler
 {
@@ -12,9 +10,8 @@ namespace Jack_Compiler
 
     public class TokenEngine
     {
-        //bool hasMoreTokens = false;
         public int currentTokenIndex;
-        public static TokenType tokenType;
+        public static TokenType currentTokenType;
         private static List<string> fileLines = new List<string>();
         private static List<string> tokenList = new List<string>();
 
@@ -126,6 +123,10 @@ namespace Jack_Compiler
             {
                 return TokenType.STRING_CONST;
             }
+            else if(Regex.IsMatch(tokenList[currentTokenIndex], @"^[a-zA-Z]+$"))
+            {
+                return TokenType.IDENTIFIER;
+            }
             else
             {
                 return TokenType.UNKNOWN;
@@ -158,7 +159,39 @@ namespace Jack_Compiler
 
         public string GetIdentifier()
         {
+            if(Regex.IsMatch(tokenList[currentTokenIndex], @"^[a-zA-Z]+$"))
+            {
+                return tokenList[currentTokenIndex];
+            }
+            else
+            {
+                return null;
+            }
+        }
 
+        public int GetIntVal()
+        {
+            int testValue;
+            if (int.TryParse(tokenList[currentTokenIndex], out testValue))
+            {
+                return testValue;
+            }
+            else
+            {
+                return -128000;
+            }
+        }
+
+        public string GetStringVal()
+        {
+            if (tokenList[currentTokenIndex][0] == '\"')
+            {
+                return tokenList[currentTokenIndex].Replace("\"", "");
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private static void ClearWhitespace()
