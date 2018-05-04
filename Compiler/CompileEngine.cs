@@ -18,6 +18,9 @@ namespace Jack_Compiler
         private static string functionName = "";
         private static int indentLevel = 0;
 
+        public static StreamWriter XMLOutFile;
+        public static string[] tags;
+
         public static void CompileFolder(string foldername, string filename)
         {
             List<string> fileList = new List<string>();
@@ -44,64 +47,21 @@ namespace Jack_Compiler
         }
 
         public CompileEngine(string file, StreamWriter VMOutFile, StreamWriter XMLOutFile, bool includeSource, bool tokensOnly)
-        {/*
+        {
             tokenEngine = new TokenEngine(file);
             if (XMLOutFile != null)
             {
-                xmlIndent = 0;
-                doXML = true;
-                OnlyDoTokens = tokensOnly;
-                XMLFile = XMLOutFile;
-            }*/
-        }
 
-        public void CompileClass()
-        {/*
-            if (OnlyDoTokens)
-            {
-                writeXMLTagOpen("tokens");
-                while (Tokenizer.advance())
-                {
-                    WriteXML(convert(Tokenizer.tokenType), Tokenizer.currentToken);
-                }
-                writeXMLTagClose("tokens");
             }
-            else
-            {
-                writeXMLTagOpen("class");
-                expect("keyword", "class");
-                expect("identifier");
-                expect("symbol", "{");
-                while (GetNextToken())
-                {
-                    if ((tokenEngine.currentToken == "static") || (tokenEngine.currentToken == "field"))
-                    {
-                        CompileClassVarDec();
-                        continue;
-                    }
-                    else if ((tokenEngine.currentToken == "constructor") || (tokenEngine.currentToken == "function")
-                            || (tokenEngine.currentToken == "method"))
-                    {
-                        CompileSubroutineDec();
-                        continue;
-                    }
-                    else if (tokenEngine.currentToken == "}")
-                    {
-                        writeXMLTag("symbol", "}");
-                        break;
-                    }
-                    else if (tokenEngine.currentToken == "var")
-                    {
-                        CompileClassVarDec();
-                    }
-                }
-            }
-        */}
+        }
 
         private static void WriteToFile(string foldername, string filename)
         {
             string newFile = foldername;
+
+            // This should be VM?
             newFile += "\\" + filename + ".asm";
+
             TextWriter tw = new StreamWriter(newFile);
             for (int i = 0; i < assembledLines.Count; i++)
             {
@@ -110,12 +70,67 @@ namespace Jack_Compiler
             tw.Close();
         }
 
+        public void CompileClass()
+        {
+            if (writeTokens)
+            {
+                OpenXMLTag("tokens");
+                while (tokenEngine.HasMoreTokens())
+                {
+                    writeXMLTag();
+                }
+                CloseXMLTag();
+            }
+            else
+            {
+                if (tokenEngine.GetKeyword() == "class")
+                {
+                    OpenXMLTag("class");
+
+                    if (tokenEngine.GetKeyword() == "identifier")
+                    {
+                        writeXMLTag();
+
+                        if (tokenEngine.GetSymbol() == "{")
+                        {
+                            while (tokenEngine.HasMoreTokens())
+                            {
+                                if ((tokenEngine.GetKeyword() == "static") || (tokenEngine.GetKeyword() == "field"))
+                                {
+                                    writeXMLTag();
+                                    CompileClassVarDec();
+                                    continue;
+                                }
+                                else if ((tokenEngine.GetKeyword() == "constructor") || (tokenEngine.GetKeyword() == "function") || (tokenEngine.GetKeyword() == "method"))
+                                {
+                                    writeXMLTag();
+                                    CompileSubroutine();
+                                    continue;
+                                }
+                                else if (tokenEngine.GetSymbol() == "}")
+                                {
+                                    writeXMLTag();
+                                    break;
+                                }
+                                else if (tokenEngine.GetKeyword() == "var")
+                                {
+                                    writeXMLTag();
+                                    CompileClassVarDec();
+                                }
+                            }
+                        }
+                    }
+                    CloseXMLTag();
+                }
+            }
+        }
+
         public void CompileClassVarDec()
         {
 
         }
 
-        public void CompileSubroutineDec()
+        public void CompileSubroutine()
         {
 
         }
@@ -130,27 +145,93 @@ namespace Jack_Compiler
 
         }
 
-        static void writeXMLTag(string tag, string value)
+        public void CompileStatements()
         {
-            if (writeXML == true)
+
+        }
+
+        public void CompileDo()
+        {
+
+        }
+
+        public void CompileLet()
+        {
+
+        }
+
+        public void CompileWhile()
+        {
+
+        }
+
+        public void ComplieReturn()
+        {
+
+        }
+
+        public void CompileIf()
+        {
+
+        }
+
+        public void CompileExpression()
+        {
+
+        }
+
+        public void CompileTerm()
+        {
+
+        }
+
+        public void CompileExpressionList()
+        {
+
+        }
+
+        public void Check()
+        {
+
+        }
+
+        public void Indent()
+        {
+            for(int i = 0; i < indentLevel; i++)
             {
-                XMLOutFile.Write('<' + tag + '>' + value + "</" + tag + '>');
+                XMLOutFile.Write('\t');
             }
         }
 
-        static void writeXMLTagOpen(string tag)
+        public void writeXMLTag()
         {
             if (writeXML == true)
             {
-                XMLOutFile.Write('<' + tag + '>');
+                Indent();
+                XMLOutFile.Write('<' + tokenEngine.GetTokenType().ToString() + '>' + tokenEngine.GetStringVal() + "</" + tokenEngine.GetTokenType().ToString() + '>' + '\n');
+                tokenEngine.Advance();
             }
         }
 
-        static void writeXMLTagClose(string tag)
+        public void OpenXMLTag(string tag)
         {
             if (writeXML == true)
             {
-                XMLOutFile.Write("/<" + tag + '>');
+                Indent();
+                XMLOutFile.Write('<' + tag + '>' + '\n');
+                indentLevel++;
+                tags[indentLevel] = tag;
+                tokenEngine.Advance();
+            }
+        }
+
+        public void CloseXMLTag()
+        {
+            if (writeXML == true)
+            {
+                indentLevel--;
+                Indent();
+                XMLOutFile.Write("</" + tags[indentLevel+1] + '>' + '\n');
             }
         }
     }
