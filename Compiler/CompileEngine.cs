@@ -194,6 +194,7 @@ namespace Jack_Compiler
                                 break;
                             case "return":
                                 CompileReturn();
+                                Expect(TokenType.SYMBOL, "}", true);
                                 done = true;
                                 break;
                             case "if":
@@ -217,7 +218,41 @@ namespace Jack_Compiler
             {
                 throw new Exception("Expected 'identifier' or 'keyword' found: " + tokenEngine.GetUnknown());
             }
+            CloseXMLTag();
+        }
 
+        public void CompileInnerSubroutine()
+        {
+            OpenXMLTag("ifElseOrWhileBody");
+            bool done = false;
+            OpenXMLTag("statements");
+            while (!done)
+            {
+                if (tokenEngine.currentTokenType == TokenType.KEYWORD)
+                {
+                    switch (tokenEngine.GetKeyword())
+                    {
+                        case "let":
+                            CompileLet();
+                            break;
+                        case "do":
+                            CompileDo();
+                            break;
+                        case "if":
+                            CompileIf();
+                            break;
+                        case "while":
+                            CompileWhile();
+                            break;
+                        default:
+                            throw new Exception("Expected 'let', 'do', 'while', or 'if found: " + tokenEngine.GetUnknown());
+                    }
+                }
+                else
+                {
+                    Expect(TokenType.SYMBOL, "}", true);
+                }
+            }
             CloseXMLTag();
         }
 
@@ -318,23 +353,41 @@ namespace Jack_Compiler
             Expect(TokenType.KEYWORD, "let", true);
             Expect(TokenType.IDENTIFIER, true);
             Expect(TokenType.SYMBOL, "=", true);
-            CompileExpression();
+            CompileExpression(";");
             CloseXMLTag();
         }
 
         public void CompileWhile()
         {
-
+            OpenXMLTag("whileLoop");
+            Expect(TokenType.KEYWORD, "while", true);
+            CompileExpression(")");
+            CompileInnerSubroutine();
+            CloseXMLTag();
         }
 
         public void CompileReturn()
         {
-
+            Expect(TokenType.KEYWORD, "return", true);
+            if (!Expect(TokenType.IDENTIFIER, false))
+            {
+                Expect(TokenType.SYMBOL, ";", true);
+            }
         }
 
         public void CompileIf()
         {
-
+            OpenXMLTag("ifStatement");
+            Expect(TokenType.KEYWORD, "if", true);
+            CompileExpression(")");
+            CompileInnerSubroutine();
+            CloseXMLTag();
+            if(Expect(TokenType.KEYWORD, "else", false))
+            {
+                OpenXMLTag("elseStatement");
+                CompileInnerSubroutine();
+                CloseXMLTag();
+            }
         }
 
         public void CompileExpression(string termination)
