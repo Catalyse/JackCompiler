@@ -160,28 +160,58 @@ namespace Jack_Compiler
         {
             OpenXMLTag("subRoutineDec");
             WriteXMLTag();//write the method, function, or constructor call
-            Expect()
-            if(tokenEngine.GetTokenType() == TokenType.IDENTIFIER)//means we wrote constructor
+            if (Expect(TokenType.IDENTIFIER, false) || Expect(TokenType.KEYWORD, false))
             {
-                WriteXMLTag();//Write the indentifier
-
-            }
-            else if(tokenEngine.GetTokenType() == TokenType.KEYWORD)//return type
-            {
-                WriteXMLTag();
-                if (tokenEngine.GetTokenType() == TokenType.IDENTIFIER)//means we wrote constructor
+                Expect(TokenType.IDENTIFIER, true);//this can throw, the only option is indentifier here
+                CompileParameterlist();
+                CloseXMLTag();//subRoutineDec");
+                OpenXMLTag("subRoutineBody");
+                Expect(TokenType.SYMBOL, "{", true);
+                while(true)
                 {
-                    WriteXMLTag();//Write the indentifier
-                    if(tokenEngine.GetTokenType() == TokenType.SYMBOL && tokenEngine.GetSymbol() == "(")
+                    if(tokenEngine.GetKeyword() == "var")
                     {
-                        WriteXMLTag();
+                        CompileVarDec();
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
-                else
+                bool done = false;
+                OpenXMLTag("statements");
+                while(!done)
                 {
-                    throw new Exception("Expected 'identifier' found: " + tokenEngine.GetUnknown());
+                    if (tokenEngine.currentTokenType == TokenType.KEYWORD)
+                    {
+                        switch (tokenEngine.GetKeyword())
+                        {
+                            case "let":
+                                CompileLet();
+                                break;
+                            case "do":
+                                CompileDo();
+                                break;
+                            case "return":
+                                CompileReturn();
+                                done = true;
+                                break;
+                            case "if":
+                                CompileIf();
+                                break;
+                            case "while":
+                                CompileWhile();
+                                break;
+                            default:
+                                throw new Exception("Expected 'let', 'do', or 'return' found: " + tokenEngine.GetUnknown());
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Expected KEYWORD found: " + tokenEngine.currentTokenType);
+                    }
                 }
-
+                CloseXMLTag();
             }
             else
             {
@@ -193,30 +223,102 @@ namespace Jack_Compiler
 
         public void CompileParameterlist()
         {
+            OpenXMLTag("parameterList");
+            Expect(TokenType.SYMBOL, "(", true);
+            while(true)
+            {
+                if(Expect(TokenType.SYMBOL, ")", false))//This is primarily to check for no args
+                {
+                    break;
+                }
+                else
+                {
+                    Expect(TokenType.KEYWORD, true);//Look for string,bool,int, etc
+                    Expect(TokenType.IDENTIFIER, true);
+                    if(!Expect(TokenType.SYMBOL, ",", false))//Check for ',' to look for more args
+                    {
+                        Expect(TokenType.SYMBOL, ")", true);//If no ',' then we MUST find the end or there is an issue
+                        break;
+                    }
+                }
+            }
+            CloseXMLTag();
+        }
 
+        public void CompileArgList()
+        {
+            OpenXMLTag("argList");
+            Expect(TokenType.SYMBOL, "(", true);
+            while (true)
+            {
+                if (Expect(TokenType.SYMBOL, ")", false))//This is primarily to check for no args
+                {
+                    break;
+                }
+                else
+                {
+                    if(!Expect(TokenType.IDENTIFIER, false) && !Expect(TokenType.STRING_CONST, false) && !Expect(TokenType.INT_CONST, false))
+                    {
+                        throw new Exception("Expected 'IDENTIFIER' or 'STRING' or 'INT' found: " + tokenEngine.GetUnknown());
+                    }
+                    else//Check for ',' to look for more args
+                    {
+                        if(!Expect(TokenType.SYMBOL, ",", false))
+                        {
+                            Expect(TokenType.SYMBOL, ")", true);//If no ',' then we MUST find the end or there is an issue
+                            break;
+                        }
+                    }
+                }
+            }
+            CloseXMLTag();
         }
 
         public void CompileVarDec()
         {
-
-        }
-
-        public void CompileStatements()
-        {
-
+            OpenXMLTag("varDec");
+            Expect(TokenType.KEYWORD, "var", true);
+            if(tokenEngine.IsType())
+            {
+                WriteXMLTag();
+                while (true)
+                {
+                    Expect(TokenType.IDENTIFIER, true);//This is primarily to check for no args
+                    if(Expect(TokenType.SYMBOL, ";", false))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Expect(TokenType.SYMBOL, ",", true); //Break if we didnt find a ',' or ';'
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception("Expected 'SYMBOL' of type 'TYPE' found: " + tokenEngine.GetUnknown());
+            }
+            CloseXMLTag();
         }
 
         public void CompileDo()
         {
-
+            OpenXMLTag("doStatement");
+            Expect(TokenType.KEYWORD, "do", true);
+            Expect(TokenType.IDENTIFIER, true);
+            Expect(TokenType.SYMBOL, ".", true);
+            Expect(TokenType.IDENTIFIER, true);
+            CompileArgList();
+            CloseXMLTag();
         }
 
         public void CompileLet()
         {
             OpenXMLTag("letStatement");
-            WriteXMLTag();
-            WriteXMLTag();
-            WriteXMLTag();
+            Expect(TokenType.KEYWORD, "let", true);
+            Expect(TokenType.IDENTIFIER, true);
+            Expect(TokenType.SYMBOL, "=", true);
+            CompileExpression();
             CloseXMLTag();
         }
 
@@ -225,7 +327,7 @@ namespace Jack_Compiler
 
         }
 
-        public void ComplieReturn()
+        public void CompileReturn()
         {
 
         }
@@ -235,9 +337,24 @@ namespace Jack_Compiler
 
         }
 
-        public void CompileExpression()
+        public void CompileExpression(string termination)
         {
-
+            OpenXMLTag("expression");
+            bool done = false;
+            Expect(TokenType.SYMBOL, termination, true);//If we immediately have a termination we have an issue
+            while (!done)
+            {
+                OpenXMLTag("term");
+                if (Expect(TokenType.SYMBOL, "(", false))//If we dont have a nested expression
+                {
+                    CompileExpression(")");
+                }
+                else
+                {
+                    if(Expect())
+                }
+                CloseXMLTag();
+            }
         }
 
         public void CompileTerm()
