@@ -90,6 +90,7 @@ namespace Jack_Compiler
             {
                 if (tokenEngine.GetKeyword() == "class")
                 {
+                    tokenEngine.Advance();
                     OpenXMLTag("class");
 
                     if (tokenEngine.GetKeyword() == "identifier")
@@ -108,7 +109,6 @@ namespace Jack_Compiler
                                 }
                                 else if ((tokenEngine.GetKeyword() == "constructor") || (tokenEngine.GetKeyword() == "function") || (tokenEngine.GetKeyword() == "method"))
                                 {
-                                    WriteXMLTag();
                                     CompileSubroutine();
                                     continue;
                                 }
@@ -123,6 +123,10 @@ namespace Jack_Compiler
                                     CompileClassVarDec();
                                 }
                             }
+                        }
+                        else
+                        {
+                            throw new Exception("Expected '{' found: " + tokenEngine.GetUnknown());
                         }
                     }
                     CloseXMLTag();
@@ -140,19 +144,49 @@ namespace Jack_Compiler
                 while (tokenEngine.GetSymbol() != ";")
                 {
                     if (tokenEngine.GetTokenType().ToString() == "identifier")
+                    {
                         CompileVarName();
+                    }
                 }
             }
 
             if(tokenEngine.GetSymbol() == ";")
+            {
                 WriteXMLTag();
+            }
         }
 
         public void CompileSubroutine()
         {
-            OpenXMLTag("Subroutine");
+            OpenXMLTag("subRoutineDec");
+            WriteXMLTag();//write the method, function, or constructor call
+            Expect()
+            if(tokenEngine.GetTokenType() == TokenType.IDENTIFIER)//means we wrote constructor
+            {
+                WriteXMLTag();//Write the indentifier
 
+            }
+            else if(tokenEngine.GetTokenType() == TokenType.KEYWORD)//return type
+            {
+                WriteXMLTag();
+                if (tokenEngine.GetTokenType() == TokenType.IDENTIFIER)//means we wrote constructor
+                {
+                    WriteXMLTag();//Write the indentifier
+                    if(tokenEngine.GetTokenType() == TokenType.SYMBOL && tokenEngine.GetSymbol() == "(")
+                    {
+                        WriteXMLTag();
+                    }
+                }
+                else
+                {
+                    throw new Exception("Expected 'identifier' found: " + tokenEngine.GetUnknown());
+                }
 
+            }
+            else
+            {
+                throw new Exception("Expected 'identifier' or 'keyword' found: " + tokenEngine.GetUnknown());
+            }
 
             CloseXMLTag();
         }
@@ -179,7 +213,11 @@ namespace Jack_Compiler
 
         public void CompileLet()
         {
-
+            OpenXMLTag("letStatement");
+            WriteXMLTag();
+            WriteXMLTag();
+            WriteXMLTag();
+            CloseXMLTag();
         }
 
         public void CompileWhile()
@@ -214,7 +252,7 @@ namespace Jack_Compiler
 
         public void CompileIdentifier()
         {
-            if (tokenEngine.GetTokenType().ToString() == "identifier")
+            if (tokenEngine.GetTokenType() == TokenType.IDENTIFIER)
             {
                 WriteXMLTag();
             }
@@ -222,8 +260,7 @@ namespace Jack_Compiler
 
         public void CompileType()
         {
-            if (tokenEngine.GetKeyword() == "int" || tokenEngine.GetKeyword() == "char"
-                || tokenEngine.GetKeyword() == "boolean" || tokenEngine.GetTokenType().ToString() == "identifier")
+            if (tokenEngine.GetKeyword() == "int" || tokenEngine.GetKeyword() == "char" || tokenEngine.GetKeyword() == "boolean" || tokenEngine.GetTokenType() == TokenType.IDENTIFIER)
             {
                 WriteXMLTag();
             }
@@ -242,6 +279,143 @@ namespace Jack_Compiler
         public void CompileVarName()
         {
             CompileIdentifier();
+        }
+
+        private bool Expect(TokenType type, string value, bool allowThrow)
+        {
+            if (tokenEngine.currentTokenType == type)
+            {
+                switch(type)
+                {
+                    case TokenType.IDENTIFIER:
+                        if(tokenEngine.GetIdentifier() == value)
+                        {
+                            WriteXMLTag();
+                        }
+                        else
+                        {
+                            if (allowThrow)
+                            {
+                                throw new Exception("Expected value '" + value + "' found: " + tokenEngine.GetUnknown());
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        break;
+                    case TokenType.INT_CONST:
+                        if (tokenEngine.GetIntVal() == int.Parse(value))
+                        {
+                            WriteXMLTag();
+                        }
+                        else
+                        {
+                            if (allowThrow)
+                            {
+                                throw new Exception("Expected value '" + value + "' found: " + tokenEngine.GetUnknown());
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        break;
+                    case TokenType.KEYWORD:
+                        if (tokenEngine.GetKeyword() == value)
+                        {
+                            WriteXMLTag();
+                        }
+                        else
+                        {
+                            if (allowThrow)
+                            {
+                                throw new Exception("Expected value '" + value + "' found: " + tokenEngine.GetUnknown());
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        break;
+                    case TokenType.STRING_CONST:
+                        if (tokenEngine.GetStringVal() == value)
+                        {
+                            WriteXMLTag();
+                        }
+                        else
+                        {
+                            if (allowThrow)
+                            {
+                                throw new Exception("Expected value '" + value + "' found: " + tokenEngine.GetUnknown());
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        break;
+                    case TokenType.SYMBOL:
+                        if (tokenEngine.GetSymbol() == value)
+                        {
+                            WriteXMLTag();
+                        }
+                        else
+                        {
+                            if (allowThrow)
+                            {
+                                throw new Exception("Expected value '" + value + "' found: " + tokenEngine.GetUnknown());
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        break;
+                    default:
+                        if (allowThrow)
+                        {
+                            throw new Exception("Invalid TokenType passed to Expect");
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                }
+                WriteXMLTag();
+                return true;
+            }
+            else
+            {
+                if (allowThrow)
+                {
+                    throw new Exception("Expected '" + type + "' found: " + tokenEngine.GetUnknown());
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        private bool Expect(TokenType type, bool allowThrow)
+        {
+            if(tokenEngine.currentTokenType == type)
+            {
+                WriteXMLTag();
+                return true;
+            }
+            else
+            {
+                if (allowThrow)
+                {
+                    throw new Exception("Expected TokenType '" + type + "' found: " + tokenEngine.currentTokenType);
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
 
         public void Indent()

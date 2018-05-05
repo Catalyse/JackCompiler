@@ -11,7 +11,7 @@ namespace Jack_Compiler
     public class TokenEngine
     {
         public int currentTokenIndex;
-        public static TokenType currentTokenType;
+        public TokenType currentTokenType;
         private static List<string> fileLines = new List<string>();
         private static List<string> tokenList = new List<string>();
 
@@ -79,6 +79,7 @@ namespace Jack_Compiler
             ClearWhitespace();
             GenerateTokenList();
             currentTokenIndex = 0;
+            currentTokenType = GetTokenType();
         }
 
         public bool HasMoreTokens()
@@ -139,7 +140,7 @@ namespace Jack_Compiler
         {
             if (keywords.Contains(tokenList[currentTokenIndex].ToLower()))
             {
-                return tokenList[currentTokenIndex].ToUpper();
+                return tokenList[currentTokenIndex].ToLower();
             }
             else
             {
@@ -194,6 +195,11 @@ namespace Jack_Compiler
             {
                 return null;
             }
+        }
+
+        public string GetUnknown()
+        {
+            return tokenList[currentTokenIndex];
         }
 
         private static void ClearWhitespace()
